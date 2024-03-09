@@ -123,14 +123,14 @@ def recover_partial_orders(stream_plan, node_from_atom):
     return partial_orders
 
 def recover_stream_plan(evaluations, current_plan, opt_evaluations, goal_expression, domain, node_from_atom,
-                        action_plan, axiom_plans, negative, replan_step):
+                        action_plan, axiom_plans, negative, replan_step, temp_dir=None):
     # Universally quantified conditions are converted into negative axioms
     # Existentially quantified conditions are made additional preconditions
     # Universally quantified effects are instantiated by doing the cartesian produce of types (slow)
     # Added effects cancel out removed effects
     # TODO: node_from_atom is a subset of opt_evaluations (only missing functions)
-    real_task = task_from_domain_problem(domain, get_problem(evaluations, goal_expression, domain))
-    opt_task = task_from_domain_problem(domain, get_problem(opt_evaluations, goal_expression, domain))
+    real_task = task_from_domain_problem(domain, get_problem(evaluations, goal_expression, domain, temp_dir=temp_dir))
+    opt_task = task_from_domain_problem(domain, get_problem(opt_evaluations, goal_expression, domain, temp_dir=temp_dir))
     negative_from_name = {external.blocked_predicate: external for external in negative if external.is_negated}
     real_states, full_plan = recover_negative_axioms(
         real_task, opt_task, axiom_plans, action_plan, negative_from_name)
@@ -296,10 +296,10 @@ def solve_optimistic_temporal(domain, stream_domain, applied_results, all_result
 
 def solve_optimistic_sequential(domain, stream_domain, applied_results, all_results,
                                 opt_evaluations, node_from_atom, goal_expression,
-                                effort_weight, debug=False, **kwargs):
+                                effort_weight, debug=False, temp_dir=None, **kwargs):
     #print(sorted(map(fact_from_evaluation, opt_evaluations)))
     temporal_plan = None
-    problem = get_problem(opt_evaluations, goal_expression, stream_domain)  # begin_metric
+    problem = get_problem(opt_evaluations, goal_expression, stream_domain, temp_dir=temp_dir)  # begin_metric
     with Verbose(verbose=debug):
         task = task_from_domain_problem(stream_domain, problem)
         instantiated = instantiate_task(task)
@@ -321,7 +321,7 @@ def solve_optimistic_sequential(domain, stream_domain, applied_results, all_resu
 
     # TODO: apply renaming to hierarchy as well
     # solve_from_task | serialized_solve_from_task | abstrips_solve_from_task | abstrips_solve_from_task_sequential
-    renamed_plan, _ = solve_from_task(sas_task, debug=debug, **kwargs)
+    renamed_plan, _ = solve_from_task(sas_task, debug=debug, temp_dir=temp_dir, **kwargs)
     if renamed_plan is None:
         return instantiated, None, temporal_plan, INF
 
@@ -333,7 +333,7 @@ def solve_optimistic_sequential(domain, stream_domain, applied_results, all_resu
 ##################################################
 
 def plan_streams(evaluations, goal_expression, domain, all_results, negative, effort_weight, max_effort,
-                 simultaneous=False, reachieve=True, replan_actions=set(), **kwargs):
+                 simultaneous=False, reachieve=True, replan_actions=set(), temp_dir=None, **kwargs):
     # TODO: alternatively could translate with stream actions on real opt_state and just discard them
     # TODO: only consider axioms that have stream conditions?
     #reachieve = reachieve and not using_optimizers(all_results)
@@ -358,9 +358,12 @@ def plan_streams(evaluations, goal_expression, domain, all_results, negative, ef
 
     temporal = isinstance(stream_domain, SimplifiedDomain)
     optimistic_fn = solve_optimistic_temporal if temporal else solve_optimistic_sequential
+
+    print("here2")
+    print(temp_dir)
     instantiated, action_instances, temporal_plan, cost = optimistic_fn(
         domain, stream_domain, applied_results, all_results, opt_evaluations,
-        node_from_atom, goal_expression, effort_weight, **kwargs)
+        node_from_atom, goal_expression, effort_weight, temp_dir=temp_dir, **kwargs)
     if action_instances is None:
         return OptSolution(FAILED, FAILED, cost)
 
@@ -375,7 +378,7 @@ def plan_streams(evaluations, goal_expression, domain, all_results, negative, ef
                        if action.name in replan_actions] or [len(action_plan)+1]) # step after action application
 
     stream_plan, opt_plan = recover_stream_plan(evaluations, stream_plan, opt_evaluations, goal_expression, stream_domain,
-        node_from_atom, action_instances, axiom_plans, negative, replan_step)
+        node_from_atom, action_instances, axiom_plans, negative, replan_step, temp_dir=temp_dir)
     if temporal_plan is not None:
         # TODO: handle deferred streams
         assert all(isinstance(action, Action) for action in opt_plan.action_plan)

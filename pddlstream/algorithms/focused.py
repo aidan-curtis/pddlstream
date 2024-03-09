@@ -75,7 +75,7 @@ def solve_abstract(problem, constraints=PlanConstraints(), stream_info={}, repla
                   initial_complexity=0, complexity_step=1, max_complexity=INF,
                   max_skeletons=INF, search_sample_ratio=0, bind=True, max_failures=0,
                   unit_efforts=False, max_effort=INF, effort_weight=None, reorder=True,
-                  visualize=False, verbose=True, **search_kwargs):
+                  visualize=False, verbose=True, temp_dir=None, **search_kwargs):
     """
     Solves a PDDLStream problem by first planning with optimistic stream outputs and then querying streams
     :param problem: a PDDLStream problem
@@ -123,9 +123,12 @@ def solve_abstract(problem, constraints=PlanConstraints(), stream_info={}, repla
     num_iterations = eager_calls = 0
     complexity_limit = initial_complexity
 
+    
     evaluations, goal_exp, domain, externals = parse_problem(
         problem, stream_info=stream_info, constraints=constraints,
-        unit_costs=unit_costs, unit_efforts=unit_efforts)
+        unit_costs=unit_costs, unit_efforts=unit_efforts, temp_dir=temp_dir, **search_kwargs)
+    
+    
     automatically_negate_externals(domain, externals)
     enforce_simultaneous(domain, externals)
     compile_fluent_streams(domain, externals)
@@ -175,7 +178,7 @@ def solve_abstract(problem, constraints=PlanConstraints(), stream_info={}, repla
             if disabled_axioms:
                 domain.axioms.extend(disabled_axioms)
             stream_plan, opt_plan, cost = iterative_plan_streams(evaluations, positive_externals,
-                optimistic_solve_fn, complexity_limit, max_effort=max_effort)
+                optimistic_solve_fn, complexity_limit, max_effort=max_effort, temp_dir=temp_dir, **search_kwargs)
             for axiom in disabled_axioms:
                 domain.axioms.remove(axiom)
         else:

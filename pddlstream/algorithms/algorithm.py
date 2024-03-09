@@ -17,7 +17,6 @@ from pddlstream.utils import INF
 
 
 # TODO: rename file to parsing
-
 def parse_constants(domain, constant_map):
     obj_from_constant = {}
     for constant in domain.constants:
@@ -72,7 +71,7 @@ def reset_globals():
     RULES[:] = []
     SOLUTIONS[:] = []
 
-def parse_problem(problem, stream_info={}, constraints=None, unit_costs=False, unit_efforts=False):
+def parse_problem(problem, stream_info={}, constraints=None, unit_costs=False, unit_efforts=False, temp_dir=None, **kwargs):
     # TODO: just return the problem if already written programmatically
     #reset_globals() # Prevents use of satisfaction.py
     domain_pddl, constant_map, stream_pddl, stream_map, init, goal = problem
@@ -102,7 +101,7 @@ def parse_problem(problem, stream_info={}, constraints=None, unit_costs=False, u
 
     goal_exp = add_plan_constraints(constraints, domain, evaluations, goal_exp)
     parse_goal(goal_exp, domain) # Just to check that it parses
-    normalize_domain_goal(domain, goal_exp) # TODO: does not normalize goal_exp
+    normalize_domain_goal(domain, goal_exp, temp_dir=temp_dir) # TODO: does not normalize goal_exp
 
     compile_to_exogenous(evaluations, domain, streams)
     return evaluations, goal_exp, domain, streams

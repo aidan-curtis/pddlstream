@@ -137,10 +137,12 @@ def compute_skeleton_constraints(opt_plan, bindings):
 
 def get_optimistic_solve_fn(goal_exp, domain, negative, max_cost=INF, **kwargs):
     # TODO: apply to hierarchical actions representations (will need to instantiate more actions)
-    def fn(evaluations, results, constraints):
+    def fn(evaluations, results, constraints, temp_dir=None):
+        print("here3")
+        print(temp_dir)
         if constraints is None:
             return plan_streams(evaluations, goal_exp, domain, results, negative,
-                                max_cost=max_cost, **kwargs)
+                                max_cost=max_cost, temp_dir=temp_dir, **kwargs)
         #print(*relaxed_stream_plan(evaluations, goal_exp, domain, results, negative,
         #                               max_cost=max_cost, **kwargs))
         #constraints.dump()
@@ -149,16 +151,16 @@ def get_optimistic_solve_fn(goal_exp, domain, negative, max_cost=INF, **kwargs):
         goal_exp2 = add_plan_constraints(constraints, domain2, evaluations2, goal_exp, internal=True)
         max_cost2 = max_cost if (constraints is None) else min(max_cost, constraints.max_cost)
         return plan_streams(evaluations2, goal_exp2, domain2, results, negative,
-                            max_cost=max_cost2, **kwargs)
+                            max_cost=max_cost2, temp_dir=temp_dir, **kwargs)
     return fn
 
 ##################################################
 
 def hierarchical_plan_streams(evaluations, externals, results, optimistic_solve_fn, complexity_limit,
-                              depth, constraints, **effort_args):
+                              depth, constraints, temp_dir=None, **effort_args):
     if MAX_DEPTH <= depth:
         return OptSolution(None, None, INF), depth
-    stream_plan, opt_plan, cost = optimistic_solve_fn(evaluations, results, constraints)
+    stream_plan, opt_plan, cost = optimistic_solve_fn(evaluations, results, constraints, temp_dir=temp_dir)
     if not is_plan(opt_plan) or is_refined(stream_plan):
         return OptSolution(stream_plan, opt_plan, cost), depth
     #action_plan, preimage_facts = opt_plan
@@ -188,9 +190,9 @@ def hierarchical_plan_streams(evaluations, externals, results, optimistic_solve_
     if CONSTRAIN_PLANS:
         next_constraints = compute_skeleton_constraints(opt_plan, bindings)
     return hierarchical_plan_streams(evaluations, externals, next_results, optimistic_solve_fn, complexity_limit,
-                                     new_depth, next_constraints, **effort_args)
+                                     new_depth, next_constraints, temp_dir=temp_dir, **effort_args)
 
-def iterative_plan_streams(all_evaluations, externals, optimistic_solve_fn, complexity_limit, **effort_args):
+def iterative_plan_streams(all_evaluations, externals, optimistic_solve_fn, complexity_limit, temp_dir=None, **effort_args):
     # Previously didn't have unique optimistic objects that could be constructed at arbitrary depths
     start_time = time.time()
     complexity_evals = {e: n for e, n in all_evaluations.items() if n.complexity <= complexity_limit}
@@ -200,7 +202,7 @@ def iterative_plan_streams(all_evaluations, externals, optimistic_solve_fn, comp
         results, exhausted = optimistic_process_streams(complexity_evals, externals, complexity_limit, **effort_args)
         opt_solution, final_depth = hierarchical_plan_streams(
             complexity_evals, externals, results, optimistic_solve_fn, complexity_limit,
-            depth=0, constraints=None, **effort_args)
+            depth=0, constraints=None, temp_dir=temp_dir, **effort_args)
         stream_plan, action_plan, cost = opt_solution
         print('Attempt: {} | Results: {} | Depth: {} | Success: {} | Time: {:.3f}'.format(
             num_iterations, len(results), final_depth, is_plan(action_plan), elapsed_time(start_time)))

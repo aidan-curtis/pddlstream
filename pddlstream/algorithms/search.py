@@ -3,7 +3,7 @@ from __future__ import print_function
 from copy import deepcopy
 from time import time
 
-from pddlstream.algorithms.downward import run_search, TEMP_DIR, write_pddl
+from pddlstream.algorithms.downward import run_search, write_pddl
 from pddlstream.algorithms.instantiate_task import write_sas_task, translate_and_write_pddl
 from pddlstream.utils import INF, Verbose, safe_rm_dir, elapsed_time
 
@@ -16,7 +16,7 @@ from pddlstream.utils import INF, Verbose, safe_rm_dir, elapsed_time
 # TODO: recursive application of these
 # TODO: write the domain and problem PDDL files that are used for debugging purposes
 
-def solve_from_task(sas_task, temp_dir=TEMP_DIR, clean=False, debug=False, hierarchy=[], **search_args):
+def solve_from_task(sas_task, temp_dir=None, clean=False, debug=False, hierarchy=[], **search_args):
     # TODO: can solve using another planner and then still translate using FastDownward
     # Can apply plan constraints (skeleton constraints) here as well
     start_time = time()
@@ -34,7 +34,7 @@ def solve_from_task(sas_task, temp_dir=TEMP_DIR, clean=False, debug=False, hiera
     #    axiom.dump()
     return solution
 
-def solve_from_pddl(domain_pddl, problem_pddl, temp_dir=TEMP_DIR, clean=False, debug=False, **search_kwargs):
+def solve_from_pddl(domain_pddl, problem_pddl, temp_dir=None, clean=False, debug=False, **search_kwargs):
     # TODO: combine with solve_from_task
     #return solve_tfd(domain_pddl, problem_pddl)
     start_time = time()
@@ -88,7 +88,7 @@ def plan_subgoals(sas_task, subgoal_plan, temp_dir, **kwargs):
     return full_plan, full_cost
 
 
-def serialized_solve_from_task(sas_task, temp_dir=TEMP_DIR, clean=False, debug=False, hierarchy=[], **kwargs):
+def serialized_solve_from_task(sas_task, temp_dir=None, clean=False, debug=False, hierarchy=[], **kwargs):
     # TODO: specify goal grouping / group by predicate & objects
     # TODO: version that solves for all disjuctive subgoals at once
     start_time = time()
@@ -168,7 +168,7 @@ def add_subgoals(sas_task, subgoal_plan):
     return subgoal_var
 
 
-def abstrips_solve_from_task(sas_task, temp_dir=TEMP_DIR, clean=False, debug=False, hierarchy=[], **kwargs):
+def abstrips_solve_from_task(sas_task, temp_dir=None, clean=False, debug=False, hierarchy=[], **kwargs):
     # Like partial order planning in terms of precondition order
     # TODO: add achieve subgoal actions
     # TODO: most generic would be a heuristic on each state
@@ -202,7 +202,7 @@ def abstrips_solve_from_task(sas_task, temp_dir=TEMP_DIR, clean=False, debug=Fal
 # TODO: reconcile shared objects on each level
 # Each operator in the hierarchy is a legal "operator" that may need to be refined
 
-def abstrips_solve_from_task_sequential(sas_task, temp_dir=TEMP_DIR, clean=False, debug=False,
+def abstrips_solve_from_task_sequential(sas_task, temp_dir=None, clean=False, debug=False,
                                         hierarchy=[], subgoal_horizon=1, **kwargs):
     # TODO: version that plans for each goal individually
     # TODO: can reduce to goal serialization if binary flag for each subgoal

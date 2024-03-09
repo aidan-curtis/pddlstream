@@ -65,7 +65,6 @@ from pddl_parser.parsing_functions import parse_domain_pddl, parse_task_pddl, \
     parse_condition, check_for_duplicates
 sys.argv = original_argv
 
-TEMP_DIR = 'temp/'
 TRANSLATE_OUTPUT = 'output.sas'
 SEARCH_OUTPUT = 'sas_plan'
 SEARCH_COMMAND = 'downward --internal-plan-file {} {} < {}'
@@ -312,7 +311,7 @@ def parse_goal(goal_exp, domain):
     return parse_condition(pddl_list_from_expression(goal_exp),
                            domain.type_dict, domain.predicate_dict).simplified()
 
-def get_problem(evaluations, goal_exp, domain, unit_costs=False):
+def get_problem(evaluations, goal_exp, domain, unit_costs=False, temp_dir=None):
     objects = objects_from_evaluations(evaluations)
     typed_objects = list({make_object(pddl_from_object(obj)) for obj in objects} - set(domain.constants))
     # TODO: this doesn't include =
@@ -322,7 +321,7 @@ def get_problem(evaluations, goal_exp, domain, unit_costs=False):
     problem_pddl = None
     if USE_FORBID:
         problem_pddl = get_problem_pddl(evaluations, goal_exp, domain.pddl, temporal=False)
-    write_pddl(domain.pddl, problem_pddl, temp_dir=TEMP_DIR)
+    write_pddl(domain.pddl, problem_pddl, temp_dir=temp_dir)
     return Problem(task_name=domain.name, task_domain_name=domain.name,
                    objects=sorted(typed_objects, key=lambda o: o.name),
                    task_requirements=pddl.tasks.Requirements([]), init=init, goal=goal,
@@ -403,9 +402,9 @@ def get_disjunctive_parts(condition):
 
 ##################################################
 
-def normalize_domain_goal(domain, goal_exp):
+def normalize_domain_goal(domain, goal_exp, temp_dir=None):
     evaluations = []
-    problem = get_problem(evaluations, goal_exp, domain, unit_costs=False)
+    problem = get_problem(evaluations, goal_exp, domain, unit_costs=False, temp_dir=temp_dir)
     task = task_from_domain_problem(domain, problem)
     normalize.normalize(task)
     return task
@@ -504,8 +503,8 @@ def parse_solutions(temp_path, plan_files):
             best_plan, best_cost = plan, cost
     return best_plan, best_cost
 
-def write_pddl(domain_pddl=None, problem_pddl=None, temp_dir=TEMP_DIR):
-    clear_dir(temp_dir)
+def write_pddl(domain_pddl=None, problem_pddl=None, temp_dir=None):
+    # clear_dir(temp_dir)
     domain_path = os.path.join(temp_dir, DOMAIN_INPUT)
     if domain_pddl is not None:
         write(domain_path, domain_pddl)
