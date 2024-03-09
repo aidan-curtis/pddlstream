@@ -410,7 +410,7 @@ def normalize_domain_goal(domain, goal_exp):
     normalize.normalize(task)
     return task
 
-def run_search(temp_dir, planner=DEFAULT_PLANNER, max_planner_time=DEFAULT_MAX_TIME,
+def run_search(temp_dir=None, planner=DEFAULT_PLANNER, max_planner_time=DEFAULT_MAX_TIME,
                max_cost=INF, debug=False):
     """
     Runs FastDownward's search phase on translated SAS+ problem TRANSLATE_OUTPUT
@@ -450,9 +450,7 @@ def run_search(temp_dir, planner=DEFAULT_PLANNER, max_planner_time=DEFAULT_MAX_T
     #    output = subprocess.check_output(command, shell=True, cwd=None) #, timeout=None)
     #except subprocess.CalledProcessError as e:
     #    print(e)
-
-    #temp_path = temp_dir
-    temp_path = os.path.join(os.getcwd(), TEMP_DIR) # TODO: temp dir?
+    temp_path = temp_dir or os.path.join(os.getcwd(), TEMP_DIR)
     for filename in os.listdir(temp_path):
         if filename.startswith(SEARCH_OUTPUT):
             safe_remove(os.path.join(temp_path, filename))
